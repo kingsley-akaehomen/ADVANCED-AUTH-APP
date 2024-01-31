@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
+const userRoute = require("./routes/userRoute");
+const errorHandler = require("./middlewares/errorMiddleware");
 
 const app = express();
 
@@ -18,12 +20,15 @@ app.use(cors({
 }))
 
 //Routes
-
+app.use("/api/users",  userRoute);
 
 //home route
 app.get("/api", (req, res) => {
     res.send("This is the home route")
 })
+
+//Error middleware
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5050
 
