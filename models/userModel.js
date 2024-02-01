@@ -44,7 +44,7 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true,
         default: "subscriber",
-        enum: ["subscriber", "admin", "suspended"]
+        enum: ["subscriber", "admin", "suspended", "author"]
     },
 
     isVerified: {

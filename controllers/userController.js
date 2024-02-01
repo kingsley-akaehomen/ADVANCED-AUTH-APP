@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const parser = require("ua-parser-js");
 const { generateToken } = require("../util/index.js");
 
@@ -202,9 +203,53 @@ const deleteUser = asyncHandler(async (req, res) => {
 
     await user.deleteOne();
 
-    res.status(200).json({message: "User has been successfully deleted"})
+    res.status(200).json({ message: "User has been successfully deleted" })
 })
 
+// GET get all users 
+// api/users/getUsers
+const getUsers = asyncHandler(async (req, res) => {
+    //check for users
+    const users = await User.find().sort("-createdAt").select("-password");
+    if (!users) {
+        res.status(500);
+        throw new Error("Something went wrong, try again")
+    }
+    res.status(200).json(users)
+})
+
+//Get login status
+const getLoginStatus = asyncHandler(async (req, res) => {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.json(false);
+    }
+    //verify token
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    if (verified) {
+        res.json(true);
+    } else {
+        res.json(false);
+    }
+});
+
+
+//POST Upgrade a user
+//api/users/upgradeUser
+const upgradeUser = asyncHandler(async (req, res) => {
+  const { role, id } = req.body;
+  const user = await User.findById(id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.role = role
+  await user.save();
+  res.status(200).json({
+    message: `user has been updated to ${role}`
+  })
+})
 
 module.exports = {
     registerUser,
@@ -212,5 +257,8 @@ module.exports = {
     logoutUser,
     getUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    getUsers,
+    getLoginStatus,
+    upgradeUser
 };
