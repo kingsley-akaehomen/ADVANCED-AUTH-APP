@@ -59,7 +59,7 @@ const registerUser = asyncHandler(async (req, res) => {
             name,
             email,
             password,
-            bio, 
+            bio,
             phone,
             photo,
             role,
@@ -72,4 +72,79 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { registerUser }
+//Login a user
+//POST api/users/loginUser
+const loginUser = asyncHandler(async (req, res) => {
+    //Input validation
+    const { email, password } = req.body;
+    if (!email || !password) {
+        res.status(400);
+        throw new Error("Please all fields are required")
+    }
+
+    //Check if user exist
+    const user = await User.findOne({ email });
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    //Check for the correct password
+    const passwordIsCorrect = await bcrypt.compare(password, user.password);
+    console.log(" hashed cpmparison code reach here");
+
+    if (!passwordIsCorrect) {
+        res.status(400);
+        throw new Error("Invalid email or password");
+    }
+
+    //Trigger 2FA for unknown userAgent
+
+    //Generate token
+    const token = generateToken(user._id);
+
+    if (user && passwordIsCorrect) {
+        //Send HTTP-only cookie
+        res.cookie("token", token, {
+            path: "/",
+            httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            // sameSite: "none",
+            // secure: true
+        });
+
+        const { _id, name, email, password, bio, phone, photo, role, isVerified } = user;
+        res.status(200).json({
+            message: "Logged in successfully",
+            _id,
+            name,
+            email,
+            bio,
+            phone,
+            photo,
+            role,
+            isVerified,
+            token
+        })
+
+    } else {
+        res.status(500);
+        throw new Error("Something went wrong, Please try again");
+    }
+});
+
+//Logout User
+//api/users/logoutUser GET
+const logoutUser = asyncHandler(async (req, res) => {
+    res.cookie("token", "", {
+        path: "/",
+        httpOnly: true,
+        expires: new Date(0),
+        // secure: true,
+        // sameSite: none
+    })
+
+    res.status(200).json({ message: "Logged out successfully" });
+});
+
+module.exports = { registerUser, loginUser, logoutUser }
